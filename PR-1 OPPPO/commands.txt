@@ -1,0 +1,15 @@
+ADD Truck 350 Germany 25
+ADD Bus 220 Russia 45
+ADD Car 150 Japan 4 210
+ADD Truck 400 USA 30
+ADD Bus 180 France 30
+ADD Car 120 China 5 180
+PRINT
+REM power > 300
+PRINT
+REM type == "Bus"
+PRINT
+REM country == "Japan"
+PRINT
+REM passengerCapacity < 40
+PRINT

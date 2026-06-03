@@ -1,0 +1,7 @@
+ADD Bus 220 Russia 45
+ADD Bus 180 France 30
+
+PRINT
+
+REM type == "Bus"
+PRINT

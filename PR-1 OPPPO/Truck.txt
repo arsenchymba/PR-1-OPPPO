@@ -1,0 +1,11 @@
+ADD Truck 350 Germany 25
+ADD Truck 230 Russia 18
+ADD Truck 180 Japan 5
+
+PRINT
+
+REM power > 300
+PRINT
+
+REM country == "Japan"
+PRINT
