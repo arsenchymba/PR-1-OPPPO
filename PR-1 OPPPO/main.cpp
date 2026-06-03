@@ -21,7 +21,7 @@ public:
 
     // Геттеры для доступа к полям (для REM)
     int getPower() const { return power; }
-    string getCountry() const { return country; }
+    const string& getCountry() const { return country; }
 
     // Чисто виртуальные методы
     virtual void print() const = 0;
@@ -101,7 +101,7 @@ private:
 
     // Вспомогательный метод для сравнения чисел
     template<typename T>
-    bool compareNumbers(T a, T b, const string& op) const {
+    static bool compareNumbers(T a, T b, const string& op) {
         if (op == "==") return a == b;
         if (op == "!=") return a != b;
         if (op == ">")  return a > b;
@@ -112,7 +112,7 @@ private:
     }
 
     // Вспомогательный метод для сравнения строк
-    bool compareStrings(const string& a, const string& b, const string& op) const {
+    static bool compareStrings(const string& a, const string& b, const string& op) {
         if (op == "==") return a == b;
         if (op == "!=") return a != b;
         if (op == ">")  return a > b;
@@ -153,7 +153,7 @@ public:
             valueStr = valueStr.substr(1, valueStr.length() - 2);
         }
 
-        size_t beforeCount = vehicles.size();
+       
 
         // Удаляем элементы, удовлетворяющие условию
         auto it = remove_if(vehicles.begin(), vehicles.end(),
@@ -202,7 +202,7 @@ public:
                 return false;
             });
 
-        size_t removedCount = beforeCount - (vehicles.end() - it);
+        
         vehicles.erase(it, vehicles.end());
 
         cout <<"После удаления осталось: " << vehicles.size() << endl;
