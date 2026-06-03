@@ -24,4 +24,7 @@
     <Text Include="Truck.txt" />
     <Text Include="Bus.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\.gitignore" />
+  </ItemGroup>
 </Project>
