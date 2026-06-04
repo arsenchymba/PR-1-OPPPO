@@ -6,7 +6,8 @@
 
 using namespace std;
 
-// Вспомогательная функция для удаления пробелов
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+
 static string trim(const string& str) {
     size_t start = str.find_first_not_of(" \t");
     if (start == string::npos) return "";
@@ -14,7 +15,6 @@ static string trim(const string& str) {
     return str.substr(start, end - start + 1);
 }
 
-// Вспомогательная функция для удаления кавычек
 static string unquote(const string& str) {
     if (str.size() >= 2 && str.front() == '"' && str.back() == '"') {
         return str.substr(1, str.size() - 2);
@@ -22,36 +22,97 @@ static string unquote(const string& str) {
     return str;
 }
 
-// Сравнение чисел
+// ========== ПРЕОБРАЗОВАНИЕ СТРОКИ В COMPARISONOP ==========
+
+VehicleContainer::ComparisonOp VehicleContainer::parseOperator(const string& op) {
+    if (op == "==") return ComparisonOp::Equal;
+    if (op == "!=") return ComparisonOp::NotEqual;
+    if (op == ">")  return ComparisonOp::Greater;
+    if (op == "<")  return ComparisonOp::Less;
+    if (op == ">=") return ComparisonOp::GreaterEqual;
+    if (op == "<=") return ComparisonOp::LessEqual;
+    return ComparisonOp::Equal; // значение по умолчанию
+}
+
+// ========== СРАВНЕНИЕ ЧИСЕЛ ==========
+
 template<typename T>
-bool VehicleContainer::compareNumbers(T a, T b, const string& op) {
-    if (op == "==") return a == b;
-    if (op == "!=") return a != b;
-    if (op == ">")  return a > b;
-    if (op == "<")  return a < b;
-    if (op == ">=") return a >= b;
-    if (op == "<=") return a <= b;
+bool VehicleContainer::compareNumbers(T a, T b, ComparisonOp op) {
+    switch (op) {
+    case ComparisonOp::Equal:        return a == b;
+    case ComparisonOp::NotEqual:     return a != b;
+    case ComparisonOp::Greater:      return a > b;
+    case ComparisonOp::Less:         return a < b;
+    case ComparisonOp::GreaterEqual: return a >= b;
+    case ComparisonOp::LessEqual:    return a <= b;
+    default: return false;
+    }
+}
+
+// ========== СРАВНЕНИЕ СТРОК ==========
+
+bool VehicleContainer::compareStrings(const string& a, const string& b, ComparisonOp op) {
+    switch (op) {
+    case ComparisonOp::Equal:        return a == b;
+    case ComparisonOp::NotEqual:     return a != b;
+    case ComparisonOp::Greater:      return a > b;
+    case ComparisonOp::Less:         return a < b;
+    case ComparisonOp::GreaterEqual: return a >= b;
+    case ComparisonOp::LessEqual:    return a <= b;
+    default: return false;
+    }
+}
+
+// ========== ПРОВЕРКА УСЛОВИЯ ДЛЯ ОДНОГО ОБЪЕКТА ==========
+
+bool VehicleContainer::matchesCondition(const Vehicle& v, const string& field,
+    ComparisonOp op, const string& value) {
+    // Общие поля
+    if (field == "type") {
+        return compareStrings(v.getType(), value, op);
+    }
+    if (field == "power") {
+        int val = stoi(value);
+        return compareNumbers(v.getPower(), val, op);
+    }
+    if (field == "country") {
+        return compareStrings(v.getCountry(), value, op);
+    }
+
+    // Поля грузовика
+    if (field == "loadCapacity" && v.getType() == "Truck") {
+        int val = stoi(value);
+        return compareNumbers(static_cast<const Truck&>(v).getLoadCapacity(), val, op);
+    }
+
+    // Поля автобуса
+    if (field == "passengerCapacity" && v.getType() == "Bus") {
+        short val = stoi(value);
+        return compareNumbers(static_cast<const Bus&>(v).getPassengerCapacity(), val, op);
+    }
+
+    // Поля легкового автомобиля
+    if (field == "doors" && v.getType() == "Car") {
+        int val = stoi(value);
+        return compareNumbers(static_cast<const Car&>(v).getDoors(), val, op);
+    }
+    if (field == "maxSpeed" && v.getType() == "Car") {
+        int val = stoi(value);
+        return compareNumbers(static_cast<const Car&>(v).getMaxSpeed(), val, op);
+    }
+
     return false;
 }
 
-// Сравнение строк
-bool VehicleContainer::compareStrings(const string& a, const string& b, const string& op) {
-    if (op == "==") return a == b;
-    if (op == "!=") return a != b;
-    if (op == ">")  return a > b;
-    if (op == "<")  return a < b;
-    if (op == ">=") return a >= b;
-    if (op == "<=") return a <= b;
-    return false;
-}
+// ========== ADD ==========
 
-// ADD
 void VehicleContainer::add(unique_ptr<Vehicle> vehicle) {
     vehicles.push_back(move(vehicle));
     cout << "[ADD] Объект успешно добавлен. Всего объектов: " << vehicles.size() << endl;
 }
 
-// REM
+// ========== REM ==========
+
 void VehicleContainer::remove(const string& condition) {
     if (condition.empty()) {
         cout << "[REM] Пустое условие, ничего не удалено" << endl;
@@ -59,56 +120,24 @@ void VehicleContainer::remove(const string& condition) {
     }
 
     istringstream iss(condition);
-    string field, op, valueStr;
-    iss >> field >> op;
+    string field, op_str, valueStr;
+    iss >> field >> op_str;
     getline(iss, valueStr);
 
     valueStr = trim(unquote(valueStr));
+    ComparisonOp op = parseOperator(op_str);
 
     auto it = remove_if(vehicles.begin(), vehicles.end(),
         [&](const unique_ptr<Vehicle>& v) -> bool {
-            if (field == "type") {
-                return compareStrings(v->getType(), valueStr, op);
-            }
-            else if (field == "power") {
-                int val = stoi(valueStr);
-                return compareNumbers(v->getPower(), val, op);
-            }
-            else if (field == "country") {
-                return compareStrings(v->getCountry(), valueStr, op);
-            }
-            else if (field == "loadCapacity") {
-                if (v->getType() == "Truck") {
-                    int val = stoi(valueStr);
-                    return compareNumbers(static_cast<Truck*>(v.get())->getLoadCapacity(), val, op);
-                }
-            }
-            else if (field == "passengerCapacity") {
-                if (v->getType() == "Bus") {
-                    short val = stoi(valueStr);
-                    return compareNumbers(static_cast<Bus*>(v.get())->getPassengerCapacity(), val, op);
-                }
-            }
-            else if (field == "doors") {
-                if (v->getType() == "Car") {
-                    int val = stoi(valueStr);
-                    return compareNumbers(static_cast<Car*>(v.get())->getDoors(), val, op);
-                }
-            }
-            else if (field == "maxSpeed") {
-                if (v->getType() == "Car") {
-                    int val = stoi(valueStr);
-                    return compareNumbers(static_cast<Car*>(v.get())->getMaxSpeed(), val, op);
-                }
-            }
-            return false;
+            return matchesCondition(*v, field, op, valueStr);
         });
 
     vehicles.erase(it, vehicles.end());
     cout << "[REM] После удаления осталось: " << vehicles.size() << endl;
 }
 
-// PRINT
+// ========== PRINT ==========
+
 void VehicleContainer::printAll() const {
     if (vehicles.empty()) {
         cout << "\n=== КОНТЕЙНЕР ПУСТ ===" << endl;
@@ -126,10 +155,13 @@ void VehicleContainer::printAll() const {
     cout << "==============================\n" << endl;
 }
 
+// ========== SIZE ==========
+
 size_t VehicleContainer::size() const {
     return vehicles.size();
 }
 
-// Явное инстанцирование шаблона для используемых типов
-template bool VehicleContainer::compareNumbers<int>(int, int, const string&);
-template bool VehicleContainer::compareNumbers<short>(short, short, const string&);
+// ========== ЯВНОЕ ИНСТАНЦИРОВАНИЕ ШАБЛОНОВ ==========
+
+template bool VehicleContainer::compareNumbers<int>(int, int, ComparisonOp);
+template bool VehicleContainer::compareNumbers<short>(short, short, ComparisonOp);
