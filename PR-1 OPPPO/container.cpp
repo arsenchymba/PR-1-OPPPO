@@ -22,6 +22,30 @@ static string unquote(const string& str) {
     return str;
 }
 
+// БЕЗОПАСНОЕ ПРЕОБРАЗОВАНИЕ СТРОКИ В ЧИСЛО
+static bool safeStoi(const string& str, int& result) {
+    try {
+        size_t pos;
+        result = stoi(str, &pos);
+        // Проверяем, что вся строка была преобразована
+        return pos == str.length();
+    }
+    catch (const invalid_argument&) {
+        return false;
+    }
+    catch (const out_of_range&) {
+        return false;
+    }
+}
+
+static bool safeStoiShort(const string& str, short& result) {
+    int temp;
+    if (!safeStoi(str, temp)) return false;
+    if (temp < -32768 || temp > 32767) return false; // Проверка границ short
+    result = static_cast<short>(temp);
+    return true;
+}
+
 // ========== ПРЕОБРАЗОВАНИЕ СТРОКИ В COMPARISONOP ==========
 
 VehicleContainer::ComparisonOp VehicleContainer::parseOperator(const string& op) {
@@ -63,21 +87,16 @@ bool VehicleContainer::compareStrings(const string& a, const string& b, Comparis
     }
 }
 
-// ========== УНИВЕРСАЛЬНОЕ СРАВНЕНИЕ ПОЛЯ ==========
-
-template<typename T>
-bool VehicleContainer::compareField(const Vehicle& v, const string& value,
-    ComparisonOp op, T(Vehicle::* getter)() const) {
-    T val = stoi(value);
-    return compareNumbers((v.*getter)(), val, op);
-}
-
 // ========== СПЕЦИАЛИЗАЦИИ ДЛЯ TRUCK ==========
 
 bool VehicleContainer::compareTruckField(const Truck& t, const string& field,
     const string& value, ComparisonOp op) {
     if (field == "loadCapacity") {
-        int val = stoi(value);
+        int val;
+        if (!safeStoi(value, val)) {
+            cerr << "[WARNING] Некорректное значение для loadCapacity: " << value << endl;
+            return false;
+        }
         return compareNumbers(t.getLoadCapacity(), val, op);
     }
     return false;
@@ -88,7 +107,11 @@ bool VehicleContainer::compareTruckField(const Truck& t, const string& field,
 bool VehicleContainer::compareBusField(const Bus& b, const string& field,
     const string& value, ComparisonOp op) {
     if (field == "passengerCapacity") {
-        short val = stoi(value);
+        short val;
+        if (!safeStoiShort(value, val)) {
+            cerr << "[WARNING] Некорректное значение для passengerCapacity: " << value << endl;
+            return false;
+        }
         return compareNumbers(b.getPassengerCapacity(), val, op);
     }
     return false;
@@ -99,11 +122,19 @@ bool VehicleContainer::compareBusField(const Bus& b, const string& field,
 bool VehicleContainer::compareCarField(const Car& c, const string& field,
     const string& value, ComparisonOp op) {
     if (field == "doors") {
-        int val = stoi(value);
+        int val;
+        if (!safeStoi(value, val)) {
+            cerr << "[WARNING] Некорректное значение для doors: " << value << endl;
+            return false;
+        }
         return compareNumbers(c.getDoors(), val, op);
     }
     if (field == "maxSpeed") {
-        int val = stoi(value);
+        int val;
+        if (!safeStoi(value, val)) {
+            cerr << "[WARNING] Некорректное значение для maxSpeed: " << value << endl;
+            return false;
+        }
         return compareNumbers(c.getMaxSpeed(), val, op);
     }
     return false;
@@ -118,7 +149,11 @@ bool VehicleContainer::matchesCondition(const Vehicle& v, const string& field,
         return compareStrings(v.getType(), value, op);
     }
     if (field == "power") {
-        int val = stoi(value);
+        int val;
+        if (!safeStoi(value, val)) {
+            cerr << "[WARNING] Некорректное значение для power: " << value << endl;
+            return false;
+        }
         return compareNumbers(v.getPower(), val, op);
     }
     if (field == "country") {
@@ -136,6 +171,8 @@ bool VehicleContainer::matchesCondition(const Vehicle& v, const string& field,
         return compareCarField(static_cast<const Car&>(v), field, value, op);
     }
 
+    // Неизвестное поле
+    cerr << "[WARNING] Неизвестное поле для сравнения: " << field << endl;
     return false;
 }
 
@@ -200,5 +237,3 @@ size_t VehicleContainer::size() const {
 
 template bool VehicleContainer::compareNumbers<int>(int, int, ComparisonOp);
 template bool VehicleContainer::compareNumbers<short>(short, short, ComparisonOp);
-template bool VehicleContainer::compareField<int>(const Vehicle&, const string&, ComparisonOp, int (Vehicle::*)() const);
-template bool VehicleContainer::compareField<short>(const Vehicle&, const string&, ComparisonOp, short (Vehicle::*)() const);
