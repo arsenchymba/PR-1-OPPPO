@@ -31,7 +31,7 @@ VehicleContainer::ComparisonOp VehicleContainer::parseOperator(const string& op)
     if (op == "<")  return ComparisonOp::Less;
     if (op == ">=") return ComparisonOp::GreaterEqual;
     if (op == "<=") return ComparisonOp::LessEqual;
-    return ComparisonOp::Equal; // çíà÷åíèå ïî óìîë÷àíèş
+    return ComparisonOp::Equal;
 }
 
 // ========== ÑĞÀÂÍÅÍÈÅ ×ÈÑÅË ==========
@@ -63,6 +63,52 @@ bool VehicleContainer::compareStrings(const string& a, const string& b, Comparis
     }
 }
 
+// ========== ÓÍÈÂÅĞÑÀËÜÍÎÅ ÑĞÀÂÍÅÍÈÅ ÏÎËß ==========
+
+template<typename T>
+bool VehicleContainer::compareField(const Vehicle& v, const string& value,
+    ComparisonOp op, T(Vehicle::* getter)() const) {
+    T val = stoi(value);
+    return compareNumbers((v.*getter)(), val, op);
+}
+
+// ========== ÑÏÅÖÈÀËÈÇÀÖÈÈ ÄËß TRUCK ==========
+
+bool VehicleContainer::compareTruckField(const Truck& t, const string& field,
+    const string& value, ComparisonOp op) {
+    if (field == "loadCapacity") {
+        int val = stoi(value);
+        return compareNumbers(t.getLoadCapacity(), val, op);
+    }
+    return false;
+}
+
+// ========== ÑÏÅÖÈÀËÈÇÀÖÈÈ ÄËß BUS ==========
+
+bool VehicleContainer::compareBusField(const Bus& b, const string& field,
+    const string& value, ComparisonOp op) {
+    if (field == "passengerCapacity") {
+        short val = stoi(value);
+        return compareNumbers(b.getPassengerCapacity(), val, op);
+    }
+    return false;
+}
+
+// ========== ÑÏÅÖÈÀËÈÇÀÖÈÈ ÄËß CAR ==========
+
+bool VehicleContainer::compareCarField(const Car& c, const string& field,
+    const string& value, ComparisonOp op) {
+    if (field == "doors") {
+        int val = stoi(value);
+        return compareNumbers(c.getDoors(), val, op);
+    }
+    if (field == "maxSpeed") {
+        int val = stoi(value);
+        return compareNumbers(c.getMaxSpeed(), val, op);
+    }
+    return false;
+}
+
 // ========== ÏĞÎÂÅĞÊÀ ÓÑËÎÂÈß ÄËß ÎÄÍÎÃÎ ÎÁÚÅÊÒÀ ==========
 
 bool VehicleContainer::matchesCondition(const Vehicle& v, const string& field,
@@ -79,26 +125,15 @@ bool VehicleContainer::matchesCondition(const Vehicle& v, const string& field,
         return compareStrings(v.getCountry(), value, op);
     }
 
-    // Ïîëÿ ãğóçîâèêà
-    if (field == "loadCapacity" && v.getType() == "Truck") {
-        int val = stoi(value);
-        return compareNumbers(static_cast<const Truck&>(v).getLoadCapacity(), val, op);
+    // Ïîëÿ ñïåöèôè÷íûå äëÿ êàæäîãî òèïà
+    if (v.getType() == "Truck") {
+        return compareTruckField(static_cast<const Truck&>(v), field, value, op);
     }
-
-    // Ïîëÿ àâòîáóñà
-    if (field == "passengerCapacity" && v.getType() == "Bus") {
-        short val = stoi(value);
-        return compareNumbers(static_cast<const Bus&>(v).getPassengerCapacity(), val, op);
+    if (v.getType() == "Bus") {
+        return compareBusField(static_cast<const Bus&>(v), field, value, op);
     }
-
-    // Ïîëÿ ëåãêîâîãî àâòîìîáèëÿ
-    if (field == "doors" && v.getType() == "Car") {
-        int val = stoi(value);
-        return compareNumbers(static_cast<const Car&>(v).getDoors(), val, op);
-    }
-    if (field == "maxSpeed" && v.getType() == "Car") {
-        int val = stoi(value);
-        return compareNumbers(static_cast<const Car&>(v).getMaxSpeed(), val, op);
+    if (v.getType() == "Car") {
+        return compareCarField(static_cast<const Car&>(v), field, value, op);
     }
 
     return false;
@@ -165,3 +200,5 @@ size_t VehicleContainer::size() const {
 
 template bool VehicleContainer::compareNumbers<int>(int, int, ComparisonOp);
 template bool VehicleContainer::compareNumbers<short>(short, short, ComparisonOp);
+template bool VehicleContainer::compareField<int>(const Vehicle&, const string&, ComparisonOp, int (Vehicle::*)() const);
+template bool VehicleContainer::compareField<short>(const Vehicle&, const string&, ComparisonOp, short (Vehicle::*)() const);

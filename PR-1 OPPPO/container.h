@@ -26,6 +26,23 @@ private:
     // Метод сравнения строк
     static bool compareStrings(const string& a, const string& b, ComparisonOp op);
 
+    // Безопасное преобразование строки в число с проверкой типа
+    template<typename T>
+    static bool compareField(const Vehicle& v, const string& value,
+        ComparisonOp op, T(Vehicle::* getter)() const);
+
+    // Специализация для Truck
+    static bool compareTruckField(const Truck& t, const string& field,
+        const string& value, ComparisonOp op);
+
+    // Специализация для Bus
+    static bool compareBusField(const Bus& b, const string& field,
+        const string& value, ComparisonOp op);
+
+    // Специализация для Car
+    static bool compareCarField(const Car& c, const string& field,
+        const string& value, ComparisonOp op);
+
     // Метод проверки условия для одного объекта
     static bool matchesCondition(const Vehicle& v, const string& field,
         ComparisonOp op, const string& value);
